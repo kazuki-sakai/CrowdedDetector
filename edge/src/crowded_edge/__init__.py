@@ -1,0 +1,2 @@
+"""CrowdedDetector edge client package."""
+

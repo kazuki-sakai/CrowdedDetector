@@ -1,0 +1,20 @@
+[Unit]
+Description=CrowdedDetector backend API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crowded
+Group=crowded
+WorkingDirectory=/opt/crowded-detector/backend
+EnvironmentFile=/etc/crowded-detector/backend.env
+ExecStart=/opt/crowded-detector/backend/.venv/bin/uvicorn crowded_backend.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

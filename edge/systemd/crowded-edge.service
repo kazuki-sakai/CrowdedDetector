@@ -1,0 +1,18 @@
+[Unit]
+Description=CrowdedDetector edge camera client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crowded
+Group=crowded
+SupplementaryGroups=video
+WorkingDirectory=/opt/crowded-detector/edge
+ExecStart=/opt/crowded-detector/edge/.venv/bin/crowded-edge --config /etc/crowded-detector/device.ini
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
