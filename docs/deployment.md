@@ -16,7 +16,7 @@ Raspberry Pi OSで`python3-opencv`を導入し、仮想環境を`--system-site-p
 
 ## フロントエンド
 
-DocumentRootは`frontend/public`だけに向け、`frontend/config`と`frontend/var`を直接公開しないでください。PHP実行ユーザーには`frontend/var/cache`への書込権限を与えます。バックエンド取得にはPHPのHTTPSストリームを使うため、`allow_url_fopen`を有効にします。
+DocumentRootは`frontend/public`だけに向け、`frontend/config`を直接公開しないでください。フロントエンドはローカルファイルを作成・更新しないため、PHP実行ユーザーにアプリケーションディレクトリへの書込権限を与える必要はありません。バックエンド取得にはPHPのHTTPSストリームを使うため、`allow_url_fopen`を有効にし、Apache/PHPからバックエンドへの外向き通信がSELinuxとファイアウォールで許可されていることを確認します。
 
 本番ではフロントエンドからバックエンドへの名前解決、HTTPS証明書検証、ファイアウォール許可を事前確認してください。
 
@@ -25,7 +25,7 @@ DocumentRootは`frontend/public`だけに向け、`frontend/config`と`frontend/
 - 全エッジのIDが1〜12の範囲で重複していない
 - 部屋名変更時に`backup`へ旧履歴が作成される
 - 画像がバックエンドのディスクへ保存されていない
-- バックエンド停止時にフロントエンドが古い情報であることを表示する
+- バックエンド停止時にフロントエンドが取得失敗を表示する
 - 会場ごとの誤検出率を確認してYOLO信頼度と混雑閾値を調整する
 - ログに画像やAPIキーが記録されない
 - 端末時刻がNTPで同期されている

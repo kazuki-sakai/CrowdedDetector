@@ -1,32 +1,28 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/src/SnapshotCache.php';
+require_once dirname(__DIR__) . '/src/BackendClient.php';
 require_once dirname(__DIR__) . '/src/CongestionLevel.php';
 
 $configPath = dirname(__DIR__) . '/config/config.php';
 $config = is_file($configPath) ? require $configPath : [
     'backend_url' => getenv('CROWDED_BACKEND_URL') ?: 'http://127.0.0.1:8000/api/v1/rooms/snapshot',
     'api_key' => getenv('CROWDED_API_KEY') ?: '',
-    'cache_ttl_seconds' => 5,
     'backend_timeout_seconds' => 3,
 ];
 
-$cache = new SnapshotCache(
-    $config['backend_url'],
-    $config['api_key'],
-    dirname(__DIR__) . '/var/cache/snapshot.json',
-    (int) $config['cache_ttl_seconds'],
-    (int) $config['backend_timeout_seconds'],
-);
-
-$snapshot = ['rooms' => [], '_cache_stale' => true];
+$snapshot = ['rooms' => []];
+$thresholds = [];
 $pageError = null;
 try {
-    $snapshot = $cache->get();
+    $backend = new BackendClient(
+        $config['backend_url'],
+        $config['api_key'],
+        (int) $config['backend_timeout_seconds'],
+    );
+    $snapshot = $backend->fetchSnapshot();
     $thresholds = CongestionLevel::readThresholds(dirname(__DIR__) . '/config/ID_condition.csv');
 } catch (Throwable $error) {
-    $thresholds = [];
     $pageError = $error->getMessage();
 }
 
@@ -69,10 +65,8 @@ function localTime(?string $value): string
     </header>
 
     <?php if ($pageError !== null): ?>
-        <div class="notice error" role="alert"><?= escape($pageError) ?></div>
-    <?php elseif (($snapshot['_cache_stale'] ?? false) === true): ?>
-        <div class="notice warning" role="status">
-            通信できないため、最後に取得した情報を表示しています。
+        <div class="notice error" role="alert">
+            現在、混雑状況を取得できません。時間をおいて再度お試しください。
         </div>
     <?php endif; ?>
 

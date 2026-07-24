@@ -6,7 +6,7 @@
 
 - `edge/`: Raspberry Pi 3BとUSB Webカメラで定期撮影し、画像を送信
 - `backend/`: FastAPIで画像を受信し、人物検出結果をロック付きCSVへ記録
-- `frontend/`: バックエンドのJSONを最大5秒キャッシュし、PHPで混雑度を表示
+- `frontend/`: PHPからバックエンドの最新JSONを取得し、混雑度を表示
 - `docs/`: API、構成、導入方法の詳細
 
 最大デバイスIDは1〜12です。バックエンドは初期状態では接続確認用の`mock`検出器を使い、人数を0人として記録します。実運用時に`yolo`へ切り替えます。
@@ -53,7 +53,7 @@ Raspberry Pi OSではARM向けOpenCVをOSパッケージから利用します。
 cp frontend/config/config.example.php frontend/config/config.php
 ```
 
-`config.php`のバックエンドURLとAPIキーを設定し、WebサーバのDocumentRootを`frontend/public`へ向けます。`frontend/var/cache`はPHP実行ユーザーが書き込める必要があります。
+`config.php`のバックエンドURLとAPIキーを設定し、WebサーバのDocumentRootを`frontend/public`へ向けます。フロントエンドはキャッシュファイルを作成せず、ページ要求ごとにバックエンドからJSONを取得します。
 
 ## YOLOの有効化
 

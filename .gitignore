@@ -13,6 +13,3 @@ backend/data/*.lock
 backend/data/each/*.csv
 backend/data/backup/*.csv
 frontend/config/config.php
-frontend/var/cache/*
-!frontend/var/cache/.gitkeep
-
