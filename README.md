@@ -9,7 +9,7 @@
 - `frontend/`: PHPからバックエンドの最新JSONを取得し、混雑度を表示
 - `docs/`: API、構成、導入方法の詳細
 
-最大デバイスIDは1〜12です。バックエンドは初期状態では接続確認用の`mock`検出器を使い、人数を0人として記録します。実運用時に`yolo`へ切り替えます。
+最大デバイスIDは1〜12です。バックエンドは初期状態では接続確認用の`mock`検出器を使い、人数を0人として記録します。エッジ・Nginx・フロントエンドの結合試験には`random`検出器を利用でき、実運用時に`yolo`へ切り替えます。
 
 ## 開発環境での起動
 
@@ -54,6 +54,18 @@ cp frontend/config/config.example.php frontend/config/config.php
 ```
 
 `config.php`のバックエンドURLとAPIキーを設定し、WebサーバのDocumentRootを`frontend/public`へ向けます。フロントエンドはキャッシュファイルを作成せず、ページ要求ごとにバックエンドからJSONを取得します。
+
+## ランダム人数による結合テスト
+
+YOLOを導入する前に、画像受信ごとに0～30人のランダムな人数を保存できます。
+
+```text
+CROWDED_DETECTOR=random
+CROWDED_RANDOM_MIN_COUNT=0
+CROWDED_RANDOM_MAX_COUNT=30
+```
+
+エッジ端末、Nginx、バックエンド、フロントエンドを通した詳しい確認方法は[ランダム人数によるエッジ結合テスト](docs/random-edge-test.md)を参照してください。
 
 ## YOLOの有効化
 

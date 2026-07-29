@@ -26,12 +26,12 @@ try {
     $pageError = $error->getMessage();
 }
 
-function escape(mixed $value): string
+function crowdedEscape(mixed $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-function localTime(?string $value): string
+function crowdedFormatObservedTime(?string $value): string
 {
     if ($value === null || $value === '') {
         return '未取得';
@@ -83,18 +83,18 @@ function localTime(?string $value): string
             $count = isset($room['person_count']) ? (int) $room['person_count'] : null;
             $level = CongestionLevel::classify($count, $thresholds[$id] ?? null);
         ?>
-            <article class="room-card <?= escape($level['class']) ?>">
+            <article class="room-card <?= crowdedEscape($level['class']) ?>">
                 <div class="room-card-top">
-                    <span class="room-id">ID <?= escape($id) ?></span>
-                    <span class="status"><?= escape($level['label']) ?></span>
+                    <span class="room-id">ID <?= crowdedEscape($id) ?></span>
+                    <span class="status"><?= crowdedEscape($level['label']) ?></span>
                 </div>
-                <h2><?= escape($room['room_name'] ?? '名称未設定') ?></h2>
+                <h2><?= crowdedEscape($room['room_name'] ?? '名称未設定') ?></h2>
                 <p class="count">
                     <?php if ($count === null): ?>—<small>人</small><?php else: ?>
-                        <?= escape($count) ?><small>人</small>
+                        <?= crowdedEscape($count) ?><small>人</small>
                     <?php endif; ?>
                 </p>
-                <p class="observed">観測 <?= escape(localTime($room['observed_at'] ?? null)) ?></p>
+                <p class="observed">観測 <?= crowdedEscape(crowdedFormatObservedTime($room['observed_at'] ?? null)) ?></p>
             </article>
         <?php endforeach; ?>
     </section>

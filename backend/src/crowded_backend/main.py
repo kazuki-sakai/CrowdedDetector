@@ -8,7 +8,11 @@ from fastapi import FastAPI, Request
 
 from crowded_backend.api.observations import router as observations_router
 from crowded_backend.api.snapshots import router as snapshots_router
-from crowded_backend.inference.person_detector import MockPersonDetector, YoloPersonDetector
+from crowded_backend.inference.person_detector import (
+    MockPersonDetector,
+    RandomPersonDetector,
+    YoloPersonDetector,
+)
 from crowded_backend.services.observation_processor import ObservationProcessor
 from crowded_backend.settings import Settings
 from crowded_backend.storage.csv_store import CsvStore
@@ -23,6 +27,12 @@ def _make_detector(settings: Settings):
             model_name=settings.yolo_model,
             device=settings.yolo_device,
             confidence=settings.yolo_confidence,
+        )
+    if settings.detector == "random":
+        return RandomPersonDetector(
+            min_count=settings.random_min_count,
+            max_count=settings.random_max_count,
+            seed=settings.random_seed,
         )
     return MockPersonDetector()
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import random
 from typing import Protocol
 
 
@@ -18,6 +19,29 @@ class MockPersonDetector:
         if not image:
             raise ValueError("image is empty")
         return self.result
+
+
+class RandomPersonDetector:
+    """Test detector returning a configurable pseudo-random person count."""
+
+    def __init__(
+        self,
+        min_count: int = 0,
+        max_count: int = 30,
+        seed: int | None = None,
+    ) -> None:
+        if min_count < 0:
+            raise ValueError("min_count must not be negative")
+        if max_count < min_count:
+            raise ValueError("max_count must be greater than or equal to min_count")
+        self._min_count = min_count
+        self._max_count = max_count
+        self._random = random.Random(seed)
+
+    def count(self, image: bytes) -> int:
+        if not image:
+            raise ValueError("image is empty")
+        return self._random.randint(self._min_count, self._max_count)
 
 
 class YoloPersonDetector:
@@ -51,4 +75,3 @@ class YoloPersonDetector:
             return 0
         boxes = results[0].boxes
         return 0 if boxes is None else len(boxes)
-
