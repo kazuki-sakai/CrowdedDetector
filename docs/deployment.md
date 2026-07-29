@@ -4,9 +4,11 @@
 
 Ubuntu 22.04上で専用ユーザーを作り、アプリケーションを`/opt/crowded-detector`、実データを`/var/lib/crowded-detector`、秘密設定を`/etc/crowded-detector/backend.env`へ配置する想定です。
 
-`backend/systemd/crowded-backend.service`はUvicornを`127.0.0.1:8000`で起動します。NginxまたはApacheを前段に置き、HTTPSを終端してください。サービスファイルのユーザー名とパスは実環境に合わせて調整します。
+`backend/systemd/crowded-backend.service`はUvicornを`127.0.0.1:8000`で起動します。Nginxを前段に置き、学内限定のHTTP/80をUvicornへ中継します。サービスファイルのユーザー名とパスは実環境に合わせて調整します。8000番は外部へ公開せず、80番も送信元ネットワークを制限してください。学外ネットワークを経由する構成へ変更する場合はTLSを導入します。
 
 APIキーは十分に長いランダム値にし、エッジとPHPだけへ配布します。設定ファイルをWeb公開ディレクトリに置かないでください。
+
+GPUをPBSで排他割当し、Apptainerコンテナとして短期間運用する場合は、systemd版バックエンドと同時に起動しません。定義ファイル、PBSジョブ、ディレクトリ準備、ランダム検出からYOLOへの切替手順は[PBS・Apptainerによるバックエンド構築](pbs-apptainer-deployment.md)を参照してください。
 
 ## エッジ
 
@@ -16,9 +18,9 @@ Raspberry Pi OSで`python3-opencv`を導入し、仮想環境を`--system-site-p
 
 ## フロントエンド
 
-DocumentRootは`frontend/public`だけに向け、`frontend/config`を直接公開しないでください。フロントエンドはローカルファイルを作成・更新しないため、PHP実行ユーザーにアプリケーションディレクトリへの書込権限を与える必要はありません。バックエンド取得にはPHPのHTTPSストリームを使うため、`allow_url_fopen`を有効にし、Apache/PHPからバックエンドへの外向き通信がSELinuxとファイアウォールで許可されていることを確認します。
+DocumentRootは`frontend/public`だけに向け、`frontend/config`を直接公開しないでください。フロントエンドはローカルファイルを作成・更新しないため、PHP実行ユーザーにアプリケーションディレクトリへの書込権限を与える必要はありません。バックエンド取得にはPHPのHTTPストリームを使うため、`allow_url_fopen`を有効にし、Apache/PHPからバックエンドへの外向き通信がSELinuxとファイアウォールで許可されていることを確認します。
 
-本番ではフロントエンドからバックエンドへの名前解決、HTTPS証明書検証、ファイアウォール許可を事前確認してください。
+本番ではフロントエンドからバックエンドへの名前解決、Nginxの`server_name`と実際のHostの一致、ファイアウォール許可を事前確認してください。
 
 ## 運用前確認
 

@@ -13,3 +13,5 @@ backend/data/*.lock
 backend/data/each/*.csv
 backend/data/backup/*.csv
 frontend/config/config.php
+*.sif
+*.sif.tmp

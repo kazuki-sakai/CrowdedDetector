@@ -87,6 +87,8 @@ CROWDED_YOLO_DEVICE=0
 
 まずGPU 1枚で実測し、処理待ちが継続的に増える場合にのみGPU増設・ワーカー分割を検討してください。現実装はメモリキューを使用するため、Uvicornは`--workers 1`で起動します。
 
+PBSでGPUを割り当て、Apptainer内でバックエンドを運転する本番構築手順は[PBS・Apptainerによるバックエンド構築](docs/pbs-apptainer-deployment.md)を参照してください。バックエンド専用の定義ファイルは`deploy/apptainer/crowded-backend.def`、ジョブ雛形は`deploy/pbs/crowded-backend.pbs`です。
+
 ## テスト
 
 外部パッケージを導入していない状態でも、CSVと設定読込の単体テストを実行できます。

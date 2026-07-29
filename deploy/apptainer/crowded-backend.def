@@ -1,0 +1,53 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+%labels
+    Author kazuki.sakai
+    Version v0.1.0
+    Description "CrowdedDetector FastAPI backend with PyTorch, CUDA 12.4, cuDNN 9, and Ultralytics YOLO"
+
+%files
+    backend/pyproject.toml /opt/crowded-detector/backend/pyproject.toml
+    backend/requirements.txt /opt/crowded-detector/backend/requirements.txt
+    backend/requirements-yolo.txt /opt/crowded-detector/backend/requirements-yolo.txt
+    backend/src /opt/crowded-detector/backend/src
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/opt/conda/bin:$PATH
+    export PYTHONUNBUFFERED=1
+    export PYTHONDONTWRITEBYTECODE=1
+    export TORCH_HOME=${TORCH_HOME:-/tmp/crowded-detector-cache/torch}
+    export YOLO_CONFIG_DIR=${YOLO_CONFIG_DIR:-/tmp/crowded-detector-cache/ultralytics}
+
+%post
+    set -eu
+
+    echo ">>> Installing operating-system libraries..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1
+    rm -rf /var/lib/apt/lists/*
+
+    echo ">>> Installing CrowdedDetector and YOLO dependencies..."
+    python -m pip install --upgrade pip setuptools wheel
+    cd /opt/crowded-detector/backend
+    python -m pip install --no-cache-dir -r requirements-yolo.txt
+
+    echo ">>> Removing package caches..."
+    python -m pip cache purge || true
+
+%test
+    set -eu
+    python -c "import crowded_backend, fastapi, PIL, torch, ultralytics, uvicorn; print('CrowdedDetector import: OK'); print('PyTorch version:', torch.__version__); print('CUDA build:', torch.version.cuda); print('CUDA available during test:', torch.cuda.is_available())"
+
+%runscript
+    exec python -m uvicorn crowded_backend.main:app \
+        --host "${CROWDED_BIND_HOST:-127.0.0.1}" \
+        --port "${CROWDED_BIND_PORT:-8000}" \
+        --workers 1 \
+        "$@"
