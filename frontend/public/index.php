@@ -107,6 +107,6 @@ function crowdedFormatObservedTime(?string $value): string
         <p>画面は10秒ごとに更新されます。人数は画像認識による推定値です。</p>
     </footer>
 </main>
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=2"></script>
 </body>
 </html>
