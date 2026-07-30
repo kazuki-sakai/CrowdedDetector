@@ -14,7 +14,7 @@ def _boolean(value: str) -> bool:
     raise ValueError(f"invalid boolean: {value}")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DeviceSettings:
     device_id: int
     room_name: str
@@ -62,4 +62,3 @@ class DeviceSettings:
             raise ValueError("camera dimensions must be positive")
         if not 1 <= self.jpeg_quality <= 100:
             raise ValueError("camera.jpeg_quality must be between 1 and 100")
-
