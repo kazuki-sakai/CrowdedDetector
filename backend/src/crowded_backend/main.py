@@ -13,11 +13,13 @@ from crowded_backend.inference.person_detector import (
     RandomPersonDetector,
     YoloPersonDetector,
 )
+from crowded_backend.logging_config import configure_application_logging
 from crowded_backend.services.observation_processor import ObservationProcessor
 from crowded_backend.settings import Settings
 from crowded_backend.storage.csv_store import CsvStore
 
 
+configure_application_logging()
 LOGGER = logging.getLogger(__name__)
 
 
