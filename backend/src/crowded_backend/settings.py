@@ -26,6 +26,9 @@ class Settings:
     yolo_model: str
     yolo_device: str
     yolo_confidence: float
+    yolo_image_size: int
+    yolo_warmup_width: int
+    yolo_warmup_height: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -62,4 +65,7 @@ class Settings:
             yolo_model=os.getenv("CROWDED_YOLO_MODEL", "yolo11n.pt"),
             yolo_device=os.getenv("CROWDED_YOLO_DEVICE", "0"),
             yolo_confidence=confidence,
+            yolo_image_size=_positive_int("CROWDED_YOLO_IMAGE_SIZE", 640),
+            yolo_warmup_width=_positive_int("CROWDED_YOLO_WARMUP_WIDTH", 1280),
+            yolo_warmup_height=_positive_int("CROWDED_YOLO_WARMUP_HEIGHT", 720),
         )

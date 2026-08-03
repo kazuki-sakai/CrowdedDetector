@@ -34,6 +34,30 @@ class SettingsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 Settings.from_env()
 
+    def test_reads_yolo_shape_settings(self) -> None:
+        environment = {
+            "CROWDED_API_KEY": "test-key-1234567",
+            "CROWDED_DETECTOR": "yolo",
+            "CROWDED_YOLO_IMAGE_SIZE": "640",
+            "CROWDED_YOLO_WARMUP_WIDTH": "1280",
+            "CROWDED_YOLO_WARMUP_HEIGHT": "720",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            settings = Settings.from_env()
+        self.assertEqual(settings.yolo_image_size, 640)
+        self.assertEqual(settings.yolo_warmup_width, 1280)
+        self.assertEqual(settings.yolo_warmup_height, 720)
+
+    def test_rejects_nonpositive_yolo_image_size(self) -> None:
+        environment = {
+            "CROWDED_API_KEY": "test-key-1234567",
+            "CROWDED_DETECTOR": "yolo",
+            "CROWDED_YOLO_IMAGE_SIZE": "0",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            with self.assertRaises(ValueError):
+                Settings.from_env()
+
 
 if __name__ == "__main__":
     unittest.main()

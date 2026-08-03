@@ -27,6 +27,9 @@ def _make_detector(settings: Settings):
             model_name=settings.yolo_model,
             device=settings.yolo_device,
             confidence=settings.yolo_confidence,
+            image_size=settings.yolo_image_size,
+            warmup_width=settings.yolo_warmup_width,
+            warmup_height=settings.yolo_warmup_height,
         )
     if settings.detector == "random":
         return RandomPersonDetector(

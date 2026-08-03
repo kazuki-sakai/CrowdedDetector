@@ -3,7 +3,7 @@ From: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 
 %labels
     Author kazuki.sakai
-    Version v0.1.0
+    Version v0.2.0
     Description "CrowdedDetector FastAPI backend with PyTorch, CUDA 12.4, cuDNN 9, and Ultralytics YOLO"
 
 %files
@@ -44,6 +44,7 @@ From: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 %test
     set -eu
     python -c "import crowded_backend, fastapi, PIL, torch, ultralytics, uvicorn; print('CrowdedDetector import: OK'); print('PyTorch version:', torch.__version__); print('CUDA build:', torch.version.cuda); print('CUDA available during test:', torch.cuda.is_available())"
+    python -c "import inspect; from crowded_backend.inference.person_detector import YoloPersonDetector; from crowded_backend.settings import Settings; parameters = inspect.signature(YoloPersonDetector).parameters; required = {'image_size', 'warmup_width', 'warmup_height'}; missing = required - set(parameters); assert not missing, f'stale YoloPersonDetector in image; missing parameters: {sorted(missing)}'; assert 'yolo_image_size' in Settings.__annotations__, 'stale Settings in image'; print('CrowdedDetector YOLO warm-up implementation: OK')"
 
 %runscript
     exec python -m uvicorn crowded_backend.main:app \

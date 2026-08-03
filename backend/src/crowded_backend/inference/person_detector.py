@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from io import BytesIO
+import logging
 import random
+from time import perf_counter
 from typing import Protocol
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PersonDetector(Protocol):
@@ -47,7 +52,15 @@ class RandomPersonDetector:
 class YoloPersonDetector:
     """Ultralytics YOLO detector counting only COCO class 0 (person)."""
 
-    def __init__(self, model_name: str, device: str, confidence: float) -> None:
+    def __init__(
+        self,
+        model_name: str,
+        device: str,
+        confidence: float,
+        image_size: int = 640,
+        warmup_width: int = 1280,
+        warmup_height: int = 720,
+    ) -> None:
         try:
             from ultralytics import YOLO
         except ImportError as exc:
@@ -57,20 +70,52 @@ class YoloPersonDetector:
         self._model = YOLO(model_name)
         self._device = device
         self._confidence = confidence
+        self._image_size = image_size
+        self._warm_up(model_name, warmup_width, warmup_height)
 
-    def count(self, image: bytes) -> int:
+    def _warm_up(self, model_name: str, width: int, height: int) -> None:
         try:
             from PIL import Image
         except ImportError as exc:
             raise RuntimeError("Pillow is required for YOLO inference") from exc
-        picture = Image.open(BytesIO(image)).convert("RGB")
-        results = self._model.predict(
+        picture = Image.new("RGB", (width, height), color="black")
+        started = perf_counter()
+        try:
+            self._predict(picture)
+        finally:
+            picture.close()
+        LOGGER.info(
+            "YOLO warm-up complete model=%s device=%s source_size=%dx%d "
+            "image_size=%d elapsed_seconds=%.4f",
+            model_name,
+            self._device,
+            width,
+            height,
+            self._image_size,
+            perf_counter() - started,
+        )
+
+    def _predict(self, picture):
+        return self._model.predict(
             source=picture,
             conf=self._confidence,
             classes=[0],
             device=self._device,
+            imgsz=self._image_size,
             verbose=False,
         )
+
+    def count(self, image: bytes) -> int:
+        try:
+            from PIL import Image, ImageOps
+        except ImportError as exc:
+            raise RuntimeError("Pillow is required for YOLO inference") from exc
+        with Image.open(BytesIO(image)) as source:
+            picture = ImageOps.exif_transpose(source).convert("RGB")
+        try:
+            results = self._predict(picture)
+        finally:
+            picture.close()
         if not results:
             return 0
         boxes = results[0].boxes
