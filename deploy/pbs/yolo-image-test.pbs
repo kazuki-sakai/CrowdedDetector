@@ -1,0 +1,155 @@
+#!/bin/bash
+#PBS -S /bin/bash
+#PBS -N crowded-yolo-image
+#PBS -q gpu
+#PBS -l select=1:ncpus=4:ngpus=1:mem=16gb
+#PBS -l walltime=00:10:00
+#PBS -j oe
+
+set -euo pipefail
+umask 077
+
+DEPLOY_ROOT="${CROWDED_DEPLOY_ROOT:-/shared/crowded-detector}"
+EXPECTED_COUNT="${CROWDED_EXPECTED_COUNT:-}"
+IMAGE="${DEPLOY_ROOT}/containers/crowded-backend.sif"
+MODEL_DIR="${DEPLOY_ROOT}/models"
+MODEL="${MODEL_DIR}/yolo11n.pt"
+INPUT_DIR="${DEPLOY_ROOT}/runtime/yolo-test/input"
+INPUT_IMAGE="${INPUT_DIR}/person-test.jpg"
+CACHE_DIR="${DEPLOY_ROOT}/runtime/cache"
+
+echo "Job ID: ${PBS_JOBID:-unknown}"
+echo "Host: $(hostname)"
+echo "Start: $(date --iso-8601=seconds)"
+echo "Deploy root: ${DEPLOY_ROOT}"
+
+command -v apptainer >/dev/null 2>&1 || {
+    echo "ERROR: apptainer command was not found" >&2
+    exit 1
+}
+
+for required_file in "${IMAGE}" "${MODEL}" "${INPUT_IMAGE}"; do
+    if [ ! -r "${required_file}" ]; then
+        echo "ERROR: required file is not readable: ${required_file}" >&2
+        exit 1
+    fi
+done
+
+mkdir -p "${CACHE_DIR}"
+
+if [ -n "${CUDA_VISIBLE_DEVICES:-}" ]; then
+    export APPTAINERENV_CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES}"
+    echo "CUDA_VISIBLE_DEVICES is set by PBS"
+else
+    echo "WARNING: PBS did not set CUDA_VISIBLE_DEVICES" >&2
+fi
+
+APPTAINER_ARGS=(
+    --cleanenv
+    --nv
+    --env TORCH_HOME=/cache/torch
+    --env YOLO_CONFIG_DIR=/cache/ultralytics
+    --env "EXPECTED_COUNT=${EXPECTED_COUNT}"
+    --bind "${CACHE_DIR}:/cache"
+    --bind "${MODEL_DIR}:/models:ro"
+    --bind "${INPUT_DIR}:/input:ro"
+)
+
+echo ">>> Running YOLO person-count test..."
+apptainer exec "${APPTAINER_ARGS[@]}" "${IMAGE}" python - <<'PY'
+from pathlib import Path
+from time import perf_counter
+import os
+import sys
+
+from PIL import Image, ImageOps
+import torch
+from ultralytics import YOLO
+
+
+MODEL_PATH = Path("/models/yolo11n.pt")
+IMAGE_PATH = Path("/input/person-test.jpg")
+CONFIDENCE = 0.35
+
+print("CUDA available:", torch.cuda.is_available())
+print("Visible GPU count:", torch.cuda.device_count())
+
+if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
+    print("ERROR: exactly one CUDA GPU must be visible", file=sys.stderr)
+    raise SystemExit(1)
+
+print("GPU 0:", torch.cuda.get_device_name(0))
+
+model = YOLO(str(MODEL_PATH))
+print("Model task:", model.task)
+print("Class 0:", model.names[0])
+print("Confidence threshold:", CONFIDENCE)
+
+# Initialize CUDA and the model before measuring the test image.
+warmup_image = Image.new("RGB", (640, 640), color="black")
+warmup_started = perf_counter()
+model.predict(
+    source=warmup_image,
+    conf=CONFIDENCE,
+    classes=[0],
+    device=0,
+    verbose=False,
+)
+torch.cuda.synchronize()
+print(f"Warm-up: {perf_counter() - warmup_started:.4f} seconds")
+
+with Image.open(IMAGE_PATH) as source:
+    picture = ImageOps.exif_transpose(source).convert("RGB")
+    print("Input size:", picture.size)
+
+    started = perf_counter()
+    results = model.predict(
+        source=picture,
+        conf=CONFIDENCE,
+        classes=[0],
+        device=0,
+        verbose=False,
+    )
+    torch.cuda.synchronize()
+    total_seconds = perf_counter() - started
+
+if not results:
+    print("ERROR: YOLO returned no result object", file=sys.stderr)
+    raise SystemExit(1)
+
+result = results[0]
+boxes = result.boxes
+detected_count = 0 if boxes is None else len(boxes)
+
+print("Detected people:", detected_count)
+
+expected_value = os.getenv("EXPECTED_COUNT", "").strip()
+if expected_value:
+    expected_count = int(expected_value)
+    print("Expected people:", expected_count)
+    print("Count difference:", detected_count - expected_count)
+
+if boxes is not None:
+    confidences = boxes.conf.detach().cpu().tolist()
+    coordinates = boxes.xyxy.detach().cpu().tolist()
+    for index, (confidence, xyxy) in enumerate(
+        zip(confidences, coordinates),
+        start=1,
+    ):
+        left, top, right, bottom = xyxy
+        print(
+            f"Person {index}: confidence={confidence:.4f}, "
+            f"xyxy=({left:.1f}, {top:.1f}, {right:.1f}, {bottom:.1f})"
+        )
+
+print(f"Measured total: {total_seconds:.4f} seconds")
+print(
+    "Ultralytics speed: "
+    f"preprocess={result.speed['preprocess']:.2f} ms, "
+    f"inference={result.speed['inference']:.2f} ms, "
+    f"postprocess={result.speed['postprocess']:.2f} ms"
+)
+print("YOLO person-count test: OK")
+PY
+
+echo "Finish: $(date --iso-8601=seconds)"
