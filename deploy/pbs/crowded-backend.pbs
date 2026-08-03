@@ -17,11 +17,25 @@ DATA_DIR="${DEPLOY_ROOT}/runtime/data"
 CACHE_DIR="${DEPLOY_ROOT}/runtime/cache"
 MODEL_DIR="${DEPLOY_ROOT}/models"
 LOCK_FILE="${DEPLOY_ROOT}/runtime/crowded-backend.lock"
+LOG_DIR="${DEPLOY_ROOT}/runtime/logs"
+LOG_FILE="${LOG_DIR}/crowded-backend-${PBS_JOBID:-unknown}.log"
+
+# PBSがジョブ終了時まで標準出力をスプールする環境でも監視できるよう、
+# 共有領域へジョブ専用ログをリアルタイムに記録します。
+command -v tee >/dev/null 2>&1 || {
+    echo "ERROR: tee command was not found" >&2
+    exit 1
+}
+mkdir -p "${LOG_DIR}"
+touch "${LOG_FILE}"
+chmod 600 "${LOG_FILE}"
+exec > >(tee -a "${LOG_FILE}") 2>&1
 
 echo "Job ID: ${PBS_JOBID:-unknown}"
 echo "Host: $(hostname)"
 echo "Start: $(date --iso-8601=seconds)"
 echo "Deploy root: ${DEPLOY_ROOT}"
+echo "Live log: ${LOG_FILE}"
 
 command -v apptainer >/dev/null 2>&1 || {
     echo "ERROR: apptainer command was not found" >&2

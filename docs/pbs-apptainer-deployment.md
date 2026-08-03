@@ -237,16 +237,21 @@ qsub \
 返されたジョブIDを記録し、状態と出力を確認します。
 
 ```bash
+JOB_ID="qsubが返したジョブID"
 qstat -u "$USER"
-qstat -f JOB_ID
-tail -f crowded-backend.oJOB_NUMBER
+qstat -f "${JOB_ID}"
+tail -f \
+  "${CROWDED_DEPLOY_ROOT}/runtime/logs/crowded-backend-${JOB_ID}.log"
 ```
+
+サイトのPBS設定によっては、`crowded-backend.oJOB_NUMBER`がジョブ終了時まで作成されません。ジョブスクリプトはPBS標準出力と同じ内容を上記のジョブ専用ログへ開始直後から記録するため、実行中の監視にはこちらを使用します。ログは所有者だけが読み書きできるモード600で作成し、APIキーや受信画像は記録しません。
 
 ジョブ出力には次が表示されます。
 
 - コンテナ設定の検査結果
 - `CUDA available: True`
 - `Visible GPU count: 1`
+- `YOLO warm-up complete`（YOLOモードの場合）
 - `Uvicorn running on http://127.0.0.1:8000`を含むUvicornの起動ログ
 
 PBSジョブはUvicornをforegroundで実行します。ジョブ内で`nohup`、`&`、systemdを使用しません。
@@ -348,6 +353,7 @@ SIFを更新する場合は、別名でbuildしてimport・GPU試験を終えて
 - NginxはPBSジョブ停止中に`502 Bad Gateway`を返します。フロントエンド側の取得失敗表示が機能することも事前確認します。
 - `CUDA_VISIBLE_DEVICES`が未設定、またはコンテナから複数GPUが見える場合、ジョブファイルは起動を中止します。
 - CSV、履歴、キャッシュはSIF外の永続領域へ置きます。SIFは読み取り専用で運用します。
+- 実行中のログは`runtime/logs/crowded-backend-<PBS_JOBID>.log`で確認します。ジョブごとに別ファイルになるため、イベント終了後に不要な古いログを整理します。
 - 共有ファイルシステムで`flock`と同一ディレクトリ内の`os.replace`が正しく動作することを結合試験で確認します。
 - HTTP通信ではAPIキーと画像が平文です。学内限定、送信元IP制限、8000番非公開を維持します。
 - 開催前に、12台相当の10秒間隔送信を数時間継続し、`queue_depth`、GPUメモリ、処理時間、CSV増加量、Nginx/PBSログを確認します。
