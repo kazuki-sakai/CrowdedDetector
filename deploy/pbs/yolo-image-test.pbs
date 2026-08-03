@@ -102,6 +102,9 @@ with Image.open(IMAGE_PATH) as source:
     picture = ImageOps.exif_transpose(source).convert("RGB")
     print("Input size:", picture.size)
 
+results = None
+run_seconds = []
+for run_number in range(1, 4):
     started = perf_counter()
     results = model.predict(
         source=picture,
@@ -112,6 +115,18 @@ with Image.open(IMAGE_PATH) as source:
     )
     torch.cuda.synchronize()
     total_seconds = perf_counter() - started
+    run_seconds.append(total_seconds)
+
+    run_result = results[0]
+    run_boxes = run_result.boxes
+    run_count = 0 if run_boxes is None else len(run_boxes)
+    print(
+        f"Run {run_number}: total={total_seconds:.4f} seconds, "
+        f"people={run_count}, "
+        f"preprocess={run_result.speed['preprocess']:.2f} ms, "
+        f"inference={run_result.speed['inference']:.2f} ms, "
+        f"postprocess={run_result.speed['postprocess']:.2f} ms"
+    )
 
 if not results:
     print("ERROR: YOLO returned no result object", file=sys.stderr)
@@ -143,6 +158,10 @@ if boxes is not None:
         )
 
 print(f"Measured total: {total_seconds:.4f} seconds")
+print(
+    "Steady-state average (runs 2-3): "
+    f"{sum(run_seconds[1:]) / len(run_seconds[1:]):.4f} seconds"
+)
 print(
     "Ultralytics speed: "
     f"preprocess={result.speed['preprocess']:.2f} ms, "
