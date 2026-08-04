@@ -47,6 +47,8 @@ crowded-edge --config config/device.ini --once
 
 Raspberry Pi OSではARM向けOpenCVをOSパッケージから利用します。64-bit OS等でPyPIのOpenCV wheelを使う場合は、代わりに`python -m pip install -e '.[camera-wheel]'`を実行できます。
 
+ゴールデンSDから複数端末を展開する場合は、[Raspberry Piの個別設定](docs/edge-provisioning.md)に従い、デバイスIDから一意なホスト名と会場設定を生成します。
+
 ### フロントエンド
 
 ```bash

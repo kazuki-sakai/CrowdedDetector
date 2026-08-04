@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crowded-edge"
-version = "0.2.0"
+version = "0.3.0"
 description = "CrowdedDetector Raspberry Pi camera client"
 requires-python = ">=3.9"
 dependencies = [
@@ -16,6 +16,7 @@ camera-wheel = ["opencv-python-headless>=4.8,<5"]
 
 [project.scripts]
 crowded-edge = "crowded_edge.main:main"
+crowded-edge-provision = "crowded_edge.provision:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
