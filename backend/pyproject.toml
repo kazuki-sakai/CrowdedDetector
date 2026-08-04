@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crowded-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "CrowdedDetector backend API and person-counting worker"
 requires-python = ">=3.10"
 dependencies = [
@@ -15,4 +15,3 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

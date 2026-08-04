@@ -151,6 +151,14 @@ CROWDED_RANDOM_MIN_COUNT=0
 CROWDED_RANDOM_MAX_COUNT=30
 ```
 
+会場とカメラの上限、停止判定は次を使用します。デバイスIDはカメラごと、会場IDは表示場所ごとに割り当てます。
+
+```text
+CROWDED_MAX_DEVICES=24
+CROWDED_MAX_LOCATIONS=12
+CROWDED_DEVICE_STALE_SECONDS=35
+```
+
 コンテナ内のパスは次のままにします。PBSジョブがホスト側の永続領域をbind mountします。
 
 ```text

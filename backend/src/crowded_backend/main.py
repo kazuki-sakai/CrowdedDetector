@@ -56,7 +56,12 @@ async def _worker(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = Settings.from_env()
-    store = CsvStore(settings.data_dir, settings.max_devices)
+    store = CsvStore(
+        settings.data_dir,
+        max_devices=settings.max_devices,
+        max_locations=settings.max_locations,
+        device_stale_seconds=settings.device_stale_seconds,
+    )
     app.state.settings = settings
     app.state.store = store
     app.state.queue = asyncio.Queue(maxsize=settings.queue_size)
@@ -72,7 +77,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="CrowdedDetector API",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 app.include_router(observations_router)
@@ -86,4 +91,7 @@ def health(request: Request) -> dict[str, object]:
         "detector": request.app.state.settings.detector,
         "queue_depth": request.app.state.queue.qsize(),
         "queue_capacity": request.app.state.settings.queue_size,
+        "max_devices": request.app.state.settings.max_devices,
+        "max_locations": request.app.state.settings.max_locations,
+        "device_stale_seconds": request.app.state.settings.device_stale_seconds,
     }

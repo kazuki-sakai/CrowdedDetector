@@ -28,14 +28,22 @@ async def submit_observation(
     request: Request,
     device_id: int = Form(...),
     room_name: str = Form(...),
+    location_id: int | None = Form(default=None),
+    zone_name: str = Form(default=""),
     image: UploadFile = File(...),
 ) -> dict[str, object]:
     settings = request.app.state.settings
     room_name = room_name.strip()
+    location_id = device_id if location_id is None else location_id
+    zone_name = zone_name.strip()
     if not 1 <= device_id <= settings.max_devices:
         raise HTTPException(status_code=422, detail="device_id is out of range")
+    if not 1 <= location_id <= settings.max_locations:
+        raise HTTPException(status_code=422, detail="location_id is out of range")
     if not room_name or len(room_name) > 100 or "\n" in room_name or "\r" in room_name:
         raise HTTPException(status_code=422, detail="invalid room_name")
+    if len(zone_name) > 100 or "\n" in zone_name or "\r" in zone_name:
+        raise HTTPException(status_code=422, detail="invalid zone_name")
 
     payload = await image.read(settings.max_image_bytes + 1)
     await image.close()
@@ -49,6 +57,8 @@ async def submit_observation(
         room_name=room_name,
         image=payload,
         received_at=datetime.now(timezone.utc),
+        location_id=location_id,
+        zone_name=zone_name,
     )
     try:
         request.app.state.queue.put_nowait(observation)
@@ -58,6 +68,6 @@ async def submit_observation(
     return {
         "accepted": True,
         "device_id": device_id,
+        "location_id": location_id,
         "queue_depth": request.app.state.queue.qsize(),
     }
-

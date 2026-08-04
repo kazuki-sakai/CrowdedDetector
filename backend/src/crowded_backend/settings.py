@@ -12,11 +12,20 @@ def _positive_int(name: str, default: int) -> int:
     return value
 
 
+def _positive_float(name: str, default: float) -> float:
+    value = float(os.getenv(name, str(default)))
+    if value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     api_key: str
     data_dir: Path
     max_devices: int
+    max_locations: int
+    device_stale_seconds: float
     max_image_bytes: int
     queue_size: int
     detector: str
@@ -55,7 +64,12 @@ class Settings:
         return cls(
             api_key=api_key,
             data_dir=Path(os.getenv("CROWDED_DATA_DIR", "data")),
-            max_devices=_positive_int("CROWDED_MAX_DEVICES", 12),
+            max_devices=_positive_int("CROWDED_MAX_DEVICES", 24),
+            max_locations=_positive_int("CROWDED_MAX_LOCATIONS", 12),
+            device_stale_seconds=_positive_float(
+                "CROWDED_DEVICE_STALE_SECONDS",
+                35.0,
+            ),
             max_image_bytes=_positive_int("CROWDED_MAX_IMAGE_BYTES", 5 * 1024 * 1024),
             queue_size=_positive_int("CROWDED_QUEUE_SIZE", 24),
             detector=detector,

@@ -22,14 +22,18 @@ class ObservationProcessor:
         inference_seconds = perf_counter() - inference_started
         changed = self.store.record(
             device_id=observation.device_id,
+            location_id=observation.location_id,
             room_name=observation.room_name,
+            zone_name=observation.zone_name,
             person_count=person_count,
             observed_at=observation.received_at,
         )
         LOGGER.info(
-            "processed device_id=%d person_count=%d room_name_changed=%s "
-            "inference_seconds=%.4f",
+            "processed device_id=%d location_id=%d zone_name=%r "
+            "person_count=%d assignment_changed=%s inference_seconds=%.4f",
             observation.device_id,
+            observation.location_id or observation.device_id,
+            observation.zone_name,
             person_count,
             changed,
             inference_seconds,

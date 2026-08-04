@@ -10,4 +10,5 @@ class Observation:
     room_name: str
     image: bytes
     received_at: datetime
-
+    location_id: int | None = None
+    zone_name: str = ""

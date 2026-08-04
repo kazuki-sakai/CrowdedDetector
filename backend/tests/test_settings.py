@@ -48,6 +48,28 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.yolo_warmup_width, 1280)
         self.assertEqual(settings.yolo_warmup_height, 720)
 
+    def test_reads_location_and_staleness_settings(self) -> None:
+        environment = {
+            "CROWDED_API_KEY": "test-key-1234567",
+            "CROWDED_MAX_DEVICES": "24",
+            "CROWDED_MAX_LOCATIONS": "12",
+            "CROWDED_DEVICE_STALE_SECONDS": "35.5",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            settings = Settings.from_env()
+        self.assertEqual(settings.max_devices, 24)
+        self.assertEqual(settings.max_locations, 12)
+        self.assertEqual(settings.device_stale_seconds, 35.5)
+
+    def test_rejects_nonpositive_staleness(self) -> None:
+        environment = {
+            "CROWDED_API_KEY": "test-key-1234567",
+            "CROWDED_DEVICE_STALE_SECONDS": "0",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            with self.assertRaises(ValueError):
+                Settings.from_env()
+
     def test_rejects_nonpositive_yolo_image_size(self) -> None:
         environment = {
             "CROWDED_API_KEY": "test-key-1234567",

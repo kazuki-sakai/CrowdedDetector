@@ -22,13 +22,17 @@ class ObservationProcessorTest(unittest.TestCase):
                     room_name="部活動展示",
                     image=b"test-image",
                     received_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
+                    location_id=1,
+                    zone_name="入口側",
                 )
             )
-            room = store.snapshot()["rooms"][0]
+            room = store.snapshot(
+                now=datetime(2026, 7, 16, tzinfo=timezone.utc)
+            )["rooms"][0]
         self.assertEqual(count, 6)
+        self.assertEqual(room["id"], 1)
         self.assertEqual(room["person_count"], 6)
 
 
 if __name__ == "__main__":
     unittest.main()
-

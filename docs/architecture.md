@@ -3,7 +3,7 @@
 ## データフロー
 
 1. エッジがUSB WebカメラからJPEG画像を約10秒間隔で取得する。
-2. エッジがデバイスID、部屋名、画像を`multipart/form-data`でバックエンドへ送る。
+2. エッジがデバイスID、会場ID、撮影区域名、部屋名、画像を`multipart/form-data`でバックエンドへ送る。
 3. FastAPIは入力とAPIキーを検証し、処理キューへ入れて`202 Accepted`を返す。
 4. バックグラウンドワーカーが人物検出を実行する。
 5. ストレージがOSファイルロックを取得し、名称、履歴、最新人数を更新する。
@@ -14,12 +14,18 @@
 
 バックエンドのデータディレクトリには次のファイルを置きます。
 
-- `ID_name.csv`: `id,room_name,updated_at`
+- `ID_name.csv`: `id,location_id,room_name,zone_name,updated_at`
 - `crowded.csv`: `id,person_count,observed_at`
 - `each/crowded_01.csv`: `observed_at,person_count`
-- `backup/crowded_01_<UTC時刻>.csv`: 部屋名変更前の履歴
+- `backup/crowded_01_<UTC時刻>.csv`: デバイス割当変更前の履歴
 
-CSVはUTF-8です。書き換えは同一ディレクトリ内の一時ファイルを`fsync`した後に`os.replace`し、読み手が途中状態を見ないようにします。全CSVを1つの`.store.lock`で保護するため、名称・最新人数・履歴の更新順序が競合しません。
+CSVはUTF-8です。旧形式の`ID_name.csv`に`location_id`と`zone_name`がない場合は、それぞれデバイスIDと空文字として読み取ります。書き換えは同一ディレクトリ内の一時ファイルを`fsync`した後に`os.replace`し、読み手が途中状態を見ないようにします。全CSVを1つの`.store.lock`で保護するため、名称・最新人数・履歴の更新順序が競合しません。
+
+## 複数カメラの会場集約
+
+デバイスIDはカメラごとに一意、会場IDは表示場所ごとに共通とします。同じ会場IDに属するカメラは画角が重ならない区域を撮影し、最新人数を合算します。既定では最終受信から35秒を超えたカメラを停止扱いとして合計から除外します。全台有効、一部停止、全台停止をそれぞれ`ok`、`partial`、`offline`としてJSONへ含めます。
+
+同一会場内で異なる部屋名が送信された場合は、最小デバイスIDの名称を表示し、`configuration_consistent=false`を返します。複数カメラ間で同じ人物を識別する処理は行わないため、設置時に画角または対象区域を分割して二重計数を避けます。
 
 ## 人物検出
 
