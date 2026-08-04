@@ -17,7 +17,9 @@ def _boolean(value: str) -> bool:
 @dataclass(frozen=True)
 class DeviceSettings:
     device_id: int
+    location_id: int
     room_name: str
+    zone_name: str
     backend_url: str
     api_token: str
     timeout_seconds: float
@@ -33,9 +35,12 @@ class DeviceSettings:
         parser = configparser.ConfigParser(interpolation=None)
         if not parser.read(path, encoding="utf-8"):
             raise FileNotFoundError(f"configuration file not found: {path}")
+        device_id = parser.getint("device", "id")
         settings = cls(
-            device_id=parser.getint("device", "id"),
+            device_id=device_id,
+            location_id=parser.getint("device", "location_id", fallback=device_id),
             room_name=parser.get("device", "room_name").strip(),
+            zone_name=parser.get("device", "zone_name", fallback="").strip(),
             backend_url=parser.get("backend", "url").strip(),
             api_token=parser.get("backend", "token").strip(),
             timeout_seconds=parser.getfloat("backend", "timeout_seconds", fallback=20),
@@ -50,10 +55,23 @@ class DeviceSettings:
         return settings
 
     def validate(self) -> None:
-        if not 1 <= self.device_id <= 12:
-            raise ValueError("device.id must be between 1 and 12")
-        if not self.room_name or len(self.room_name) > 100:
+        if not 1 <= self.device_id <= 24:
+            raise ValueError("device.id must be between 1 and 24")
+        if not 1 <= self.location_id <= 12:
+            raise ValueError("device.location_id must be between 1 and 12")
+        if (
+            not self.room_name
+            or len(self.room_name) > 100
+            or "\n" in self.room_name
+            or "\r" in self.room_name
+        ):
             raise ValueError("device.room_name must contain 1 to 100 characters")
+        if (
+            len(self.zone_name) > 100
+            or "\n" in self.zone_name
+            or "\r" in self.zone_name
+        ):
+            raise ValueError("device.zone_name must contain at most 100 characters")
         if not self.backend_url.startswith(("http://", "https://")):
             raise ValueError("backend.url must be an HTTP(S) URL")
         if self.timeout_seconds <= 0 or self.interval_seconds <= 0:

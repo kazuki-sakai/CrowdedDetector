@@ -44,8 +44,10 @@ def run(settings: DeviceSettings, once: bool = False) -> None:
                     image = camera.capture_jpeg()
                     response = sender.send(image)
                     LOGGER.info(
-                        "observation accepted device_id=%d queue_depth=%s",
+                        "observation accepted device_id=%d location_id=%d "
+                        "queue_depth=%s",
                         settings.device_id,
+                        settings.location_id,
                         response.get("queue_depth", "unknown"),
                     )
                 except Exception:
@@ -70,4 +72,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

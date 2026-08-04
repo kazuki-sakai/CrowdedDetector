@@ -43,7 +43,7 @@ cp config/device.example.ini config/device.ini
 crowded-edge --config config/device.ini --once
 ```
 
-通常運転では`--once`を外します。`device.ini`には設置場所ごとのID、部屋名、URL、APIキーを設定します。
+通常運転では`--once`を外します。`device.ini`にはカメラごとのデバイスID、表示場所の会場ID、区域名、部屋名、URL、APIキーを設定します。1台で1会場を撮影する場合はデバイスIDと会場IDを同じ値にします。
 
 Raspberry Pi OSではARM向けOpenCVをOSパッケージから利用します。64-bit OS等でPyPIのOpenCV wheelを使う場合は、代わりに`python -m pip install -e '.[camera-wheel]'`を実行できます。
 

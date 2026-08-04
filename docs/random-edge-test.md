@@ -160,7 +160,9 @@ cp config/device.example.ini config/device.ini
 ```ini
 [device]
 id = 1
+location_id = 1
 room_name = 情報工学科実習室
+zone_name =
 
 [backend]
 url = http://crowded-api.internal/api/v1/observations
@@ -177,6 +179,8 @@ jpeg_quality = 85
 ```
 
 HTTPでは`verify_tls`は使用されません。
+
+1台で1会場を撮影する場合は、`id`と`location_id`を同じ値にして`zone_name`を空にします。複数台で同じ会場を分割撮影する場合は、`id`をカメラごとに変え、`location_id`と`room_name`を共通にして、`zone_name`へ「左側」「右側」などを設定します。
 
 1回だけ撮影・送信します。
 
@@ -213,7 +217,7 @@ tail -n 10 /var/lib/crowded-detector/each/crowded_01.csv
 - HTTP 404: `server_name`不一致、または画像POSTのlocationがまだ`return 404`になっている。
 - HTTP 413: Nginxの`client_max_body_size`が小さい。
 - HTTP 415: JPEG/PNG以外、または画像識別子が不正。
-- HTTP 422: デバイスIDが1～12の範囲外、または部屋名が不正。
+- HTTP 422: デバイスIDが1～24、会場IDが1～12の範囲外、または部屋名・区域名が不正。
 - HTTP 503: 処理キューが満杯。
 - 202だが更新されない: `journalctl -u crowded-backend`でワーカーエラーを確認する。
 - カメラを開けない: `/dev/video0`、`video`グループ、OpenCVの導入を確認する。

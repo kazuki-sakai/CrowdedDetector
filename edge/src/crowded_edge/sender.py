@@ -16,7 +16,9 @@ class ObservationSender:
             self.settings.backend_url,
             data={
                 "device_id": str(self.settings.device_id),
+                "location_id": str(self.settings.location_id),
                 "room_name": self.settings.room_name,
+                "zone_name": self.settings.zone_name,
             },
             files={"image": ("capture.jpg", image, "image/jpeg")},
             timeout=self.settings.timeout_seconds,
@@ -30,4 +32,3 @@ class ObservationSender:
 
     def close(self) -> None:
         self.session.close()
-
