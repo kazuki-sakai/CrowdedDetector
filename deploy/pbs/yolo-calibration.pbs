@@ -1,0 +1,86 @@
+#!/bin/bash
+#PBS -S /bin/bash
+#PBS -N crowded-yolo-calibration
+#PBS -q gpu
+#PBS -l select=1:ncpus=4:ngpus=1:mem=16gb
+#PBS -l walltime=00:15:00
+#PBS -j oe
+
+set -euo pipefail
+umask 077
+
+DEPLOY_ROOT="${CROWDED_DEPLOY_ROOT:-/shared/crowded-detector}"
+REPOSITORY="${DEPLOY_ROOT}/source/CrowdedDetector"
+IMAGE="${DEPLOY_ROOT}/containers/crowded-backend.sif"
+MODEL_DIR="${DEPLOY_ROOT}/models"
+MODEL="${MODEL_DIR}/yolo11n.pt"
+CACHE_DIR="${DEPLOY_ROOT}/runtime/cache"
+CALIBRATION_DIR="${DEPLOY_ROOT}/runtime/yolo-calibration"
+INPUT_DIR="${CALIBRATION_DIR}/input"
+MANIFEST="${CALIBRATION_DIR}/manifest.csv"
+OUTPUT_DIR="${CALIBRATION_DIR}/output"
+TOOL="${REPOSITORY}/backend/tools/evaluate_yolo_calibration.py"
+REPORT_NAME="results-${PBS_JOBID:-manual}.csv"
+
+CONFIDENCE="${CROWDED_CALIBRATION_CONFIDENCE:-0.35}"
+IMAGE_SIZE="${CROWDED_CALIBRATION_IMAGE_SIZE:-640}"
+WARMUP_WIDTH="${CROWDED_CALIBRATION_WARMUP_WIDTH:-1280}"
+WARMUP_HEIGHT="${CROWDED_CALIBRATION_WARMUP_HEIGHT:-720}"
+
+echo "Job ID: ${PBS_JOBID:-unknown}"
+echo "Host: $(hostname)"
+echo "Start: $(date --iso-8601=seconds)"
+echo "Deploy root: ${DEPLOY_ROOT}"
+
+command -v apptainer >/dev/null 2>&1 || {
+    echo "ERROR: apptainer command was not found" >&2
+    exit 1
+}
+
+for required_file in "${IMAGE}" "${MODEL}" "${MANIFEST}" "${TOOL}"; do
+    if [ ! -r "${required_file}" ]; then
+        echo "ERROR: required file is not readable: ${required_file}" >&2
+        exit 1
+    fi
+done
+
+if [ ! -d "${INPUT_DIR}" ]; then
+    echo "ERROR: input directory does not exist: ${INPUT_DIR}" >&2
+    exit 1
+fi
+
+mkdir -p "${CACHE_DIR}" "${OUTPUT_DIR}"
+
+if [ -n "${CUDA_VISIBLE_DEVICES:-}" ]; then
+    export APPTAINERENV_CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES}"
+    echo "CUDA_VISIBLE_DEVICES is set by PBS"
+else
+    echo "WARNING: PBS did not set CUDA_VISIBLE_DEVICES" >&2
+fi
+
+APPTAINER_ARGS=(
+    --cleanenv
+    --nv
+    --env TORCH_HOME=/cache/torch
+    --env YOLO_CONFIG_DIR=/cache/ultralytics
+    --bind "${CACHE_DIR}:/cache"
+    --bind "${MODEL_DIR}:/models:ro"
+    --bind "${CALIBRATION_DIR}:/calibration"
+)
+
+echo ">>> Running YOLO calibration..."
+apptainer exec "${APPTAINER_ARGS[@]}" "${IMAGE}" \
+    python - \
+        --model /models/yolo11n.pt \
+        --input-dir /calibration/input \
+        --manifest /calibration/manifest.csv \
+        --output "/calibration/output/${REPORT_NAME}" \
+        --device 0 \
+        --confidence "${CONFIDENCE}" \
+        --image-size "${IMAGE_SIZE}" \
+        --warmup-width "${WARMUP_WIDTH}" \
+        --warmup-height "${WARMUP_HEIGHT}" \
+        < "${TOOL}"
+
+echo "Host report: ${OUTPUT_DIR}/${REPORT_NAME}"
+echo "Finish: $(date --iso-8601=seconds)"
