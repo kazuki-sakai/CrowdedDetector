@@ -49,6 +49,8 @@ Raspberry Pi OSではARM向けOpenCVをOSパッケージから利用します。
 
 ゴールデンSDから複数端末を展開する場合は、[Raspberry Piの個別設定](docs/edge-provisioning.md)に従い、デバイスIDから一意なホスト名と会場設定を生成します。
 
+設置時にノートPCから安全に画角を確認する方法と、厚紙を使った固定方法は[カメラ設置とプレビュー](docs/camera-installation.md)を参照してください。
+
 ### フロントエンド
 
 ```bash
