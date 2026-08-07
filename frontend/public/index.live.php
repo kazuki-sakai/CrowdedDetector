@@ -51,7 +51,7 @@ function crowdedFormatObservedTime(?string $value): string
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>校内混雑状況</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=2">
 </head>
 <body>
 <main>
@@ -69,6 +69,10 @@ function crowdedFormatObservedTime(?string $value): string
             現在、混雑状況を取得できません。時間をおいて再度お試しください。
         </div>
     <?php endif; ?>
+
+    <div class="notice estimate" role="note">
+        表示人数は画像認識による推定値であり、目安です。実際の人数と異なる場合があります。
+    </div>
 
     <section class="legend" aria-label="混雑度の凡例">
         <span><i class="dot open"></i>空いている</span>
@@ -90,9 +94,7 @@ function crowdedFormatObservedTime(?string $value): string
                 </div>
                 <h2><?= crowdedEscape($room['room_name'] ?? '名称未設定') ?></h2>
                 <p class="count">
-                    <?php if ($count === null): ?>—<small>人</small><?php else: ?>
-                        <?= crowdedEscape($count) ?><small>人</small>
-                    <?php endif; ?>
+                    <?= crowdedEscape(CongestionLevel::formatCountRange($count)) ?>
                 </p>
                 <p class="observed">観測 <?= crowdedEscape(crowdedFormatObservedTime($room['observed_at'] ?? null)) ?></p>
             </article>
@@ -104,7 +106,7 @@ function crowdedFormatObservedTime(?string $value): string
     <?php endif; ?>
 
     <footer>
-        <p>画面は10秒ごとに更新されます。人数は画像認識による推定値です。</p>
+        <p>画面は10秒ごとに更新されます。通信状況により表示が遅れる場合があります。</p>
     </footer>
 </main>
 <script src="assets/app.js?v=2"></script>

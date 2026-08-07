@@ -3,6 +3,26 @@ declare(strict_types=1);
 
 final class CongestionLevel
 {
+    public static function formatCountRange(?int $count): string
+    {
+        if ($count === null || $count < 0) {
+            return '—';
+        }
+        if ($count < 5) {
+            return '0〜5人';
+        }
+        if ($count < 10) {
+            return '5〜10人';
+        }
+        if ($count < 20) {
+            return '10〜20人';
+        }
+        if ($count < 30) {
+            return '20〜30人';
+        }
+        return '30人以上';
+    }
+
     /** @return array<int, array{moderate: int, crowded: int}> */
     public static function readThresholds(string $path): array
     {
@@ -49,4 +69,3 @@ final class CongestionLevel
         return ['label' => '混雑', 'class' => 'crowded'];
     }
 }
-
